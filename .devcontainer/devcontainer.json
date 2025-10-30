@@ -1,0 +1,43 @@
+{
+  "name": "CloudShop DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "temurin-21"
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.22"
+    }
+  },
+  "containerEnv": {
+    "DOCKER_BUILDKIT": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "golang.go",
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "eamodio.gitlens",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml"
+      ]
+    }
+  },
+  "postCreateCommand": "make setup",
+  "forwardPorts": [5432, 6379, 9200, 8080],
+  "remoteUser": "vscode"
+}
+
+
