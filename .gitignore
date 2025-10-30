@@ -1,3 +1,151 @@
+# CloudShop Monorepo .gitignore
+# Combines common ignores for Node.js, Python, Java, and Go projects
+# Also includes OS and editor files. Adjust as needed per service.
+
+##########################
+# OS & Editor
+##########################
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.history/
+.fleet/
+.cache/
+.Trash-*/
+
+##########################
+# Environment & Secrets
+##########################
+.env
+.env.*
+!.env.example
+.env.local
+.envrc
+.direnv/
+
+##########################
+# Logs & Reports
+##########################
+logs/
+*.log
+*.log.*
+*.out
+*.err
+coverage/
+coverage-final.json
+coverage.xml
+reports/
+.nyc_output/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+##########################
+# Docker & Build Artifacts
+##########################
+.docker/
+docker-data/
+**/dist/
+**/build/
+**/out/
+tmp/
+temp/
+.temp/
+
+##########################
+# Node.js
+##########################
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
+.yarn/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.turbo/
+
+##########################
+# Python
+##########################
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+.venv/
+venv/
+pip-wheel-metadata/
+pip-log.txt
+pip-delete-this-directory.txt
+.coverage
+.coverage.*
+.tox/
+.pytest_cache/
+.ipynb_checkpoints/
+
+##########################
+# Java
+##########################
+target/
+**/target/
+*.class
+.gradle/
+**/.gradle/
+build/
+**/build/
+.project
+.classpath
+.settings/
+.factorypath
+.mvn/wrapper/maven-wrapper.jar
+
+##########################
+# Go
+##########################
+bin/
+pkg/
+*.test
+**/vendor/
+
+##########################
+# Terraform (if used)
+##########################
+.terraform/
+**/.terraform/*
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*.tfvars
+*.tfvars.json
+
+##########################
+# Misc
+##########################
+.DS_Store*
+*.swp
+*.swo
+*.iml
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/libraries
+.idea/**/httpRequests
+.jekyll-cache/
+node_modules*/
+
 # Logs
 logs
 *.log
