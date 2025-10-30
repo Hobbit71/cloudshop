@@ -1,0 +1,51 @@
+{
+  "name": "CloudShop Polyglot Dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17"
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.22"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "charliermarsh.ruff",
+        "golang.go",
+        "redhat.java",
+        "vscjava.vscode-java-debug"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "updateContentCommand": "bash -lc 'npm -v || true; python --version; go version; java -version'",
+  "postCreateCommand": "bash -lc 'git config --global --add safe.directory /workspaces/*'",
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached,readonly"
+  ],
+  "runArgs": [
+    "--init",
+    "--network=host"
+  ],
+  "containerEnv": {
+    "PROJECT_NAME": "cloudshop"
+  },
+  "portsAttributes": {
+    "5432": { "label": "PostgreSQL" },
+    "6379": { "label": "Redis" },
+    "9200": { "label": "Elasticsearch" },
+    "8080": { "label": "Payment Mock (WireMock)" }
+  }
+}
+
