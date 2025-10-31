@@ -76,6 +76,41 @@ services:
     networks:
       - cloudshop
 
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: cloudshop-auth
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+      HOST: 0.0.0.0
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-cloudshop}
+      DB_USER: ${POSTGRES_USER:-cloudshop}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-cloudshop}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "${AUTH_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
+      interval: 30s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+    networks:
+      - cloudshop
+
 networks:
   cloudshop:
     name: cloudshop
