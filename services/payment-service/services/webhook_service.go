@@ -80,13 +80,17 @@ func (s *WebhookService) processStripeWebhook(ctx context.Context, req *models.W
 
 	valid, event := s.stripeService.VerifyWebhookSignature(payloadBytes, req.Signature)
 	if !valid {
-		webhookUUID, _ := uuid.Parse(req.ID)
-		s.logAudit(ctx, webhookUUID, models.AuditActionWebhookFailed, "", "", "Webhook signature verification failed", nil, nil)
+		// For webhook-level audit logs (before payment ID is known), use uuid.Nil
+		// and include the webhook ID in the details for traceability
+		details := fmt.Sprintf("Webhook signature verification failed (webhook_id: %s)", req.ID)
+		s.logAudit(ctx, uuid.Nil, models.AuditActionWebhookFailed, "", "", details, nil, nil)
 		return fmt.Errorf("webhook signature verification failed")
 	}
 
-	webhookUUID, _ := uuid.Parse(req.ID)
-	s.logAudit(ctx, webhookUUID, models.AuditActionWebhookVerified, "", "", "Webhook signature verified", nil, nil)
+	// For webhook-level audit logs (before payment ID is known), use uuid.Nil
+	// and include the webhook ID in the details for traceability
+	details := fmt.Sprintf("Webhook signature verified (webhook_id: %s)", req.ID)
+	s.logAudit(ctx, uuid.Nil, models.AuditActionWebhookVerified, "", "", details, nil, nil)
 
 	if event == nil {
 		// In development mode, try to process without full event object
