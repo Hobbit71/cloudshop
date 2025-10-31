@@ -61,6 +61,49 @@ services:
     networks:
       - cloudshop
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: cloudshop-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cloudshop
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: cloudshop-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    networks:
+      - cloudshop
+
   payment-mock:
     image: wiremock/wiremock:3.9.1
     container_name: cloudshop-payment-mock
@@ -254,6 +297,171 @@ services:
       interval: 30s
       timeout: 3s
       start_period: 40s
+      retries: 3
+    networks:
+      - cloudshop
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: cloudshop-notification-service
+    restart: unless-stopped
+    environment:
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cloudshop}:${POSTGRES_PASSWORD:-cloudshop}@postgres:5432/${POSTGRES_DB:-cloudshop}_notifications
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-10}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-20}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      API_PREFIX: /api/v1
+      CORS_ORIGINS: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:3000}
+      AUTH_SERVICE_URL: http://auth:3001
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@cloudshop.com}
+      SENDGRID_FROM_NAME: ${SENDGRID_FROM_NAME:-CloudShop}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      ENABLE_EMAIL: ${ENABLE_EMAIL:-true}
+      ENABLE_SMS: ${ENABLE_SMS:-true}
+      ENABLE_PUSH: ${ENABLE_PUSH:-true}
+      ENABLE_IN_APP: ${ENABLE_IN_APP:-true}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      RETRY_DELAY: ${RETRY_DELAY:-60}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-8002}:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - cloudshop
+
+  notification-worker:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile.worker
+    container_name: cloudshop-notification-worker
+    restart: unless-stopped
+    environment:
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cloudshop}:${POSTGRES_PASSWORD:-cloudshop}@postgres:5432/${POSTGRES_DB:-cloudshop}_notifications
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-10}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-20}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@cloudshop.com}
+      SENDGRID_FROM_NAME: ${SENDGRID_FROM_NAME:-CloudShop}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      ENABLE_EMAIL: ${ENABLE_EMAIL:-true}
+      ENABLE_SMS: ${ENABLE_SMS:-true}
+      ENABLE_PUSH: ${ENABLE_PUSH:-true}
+      ENABLE_IN_APP: ${ENABLE_IN_APP:-true}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      RETRY_DELAY: ${RETRY_DELAY:-60}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    networks:
+      - cloudshop
+
+  customer-service:
+    build:
+      context: ./services/customer-service
+      dockerfile: Dockerfile
+    container_name: cloudshop-customer-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      PORT: 3004
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-cloudshop}
+      DB_USER: ${POSTGRES_USER:-cloudshop}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-cloudshop}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "${CUSTOMER_SERVICE_PORT:-3004}:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3004/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 60s
+      retries: 3
+    networks:
+      - cloudshop
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    container_name: cloudshop-analytics-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      PORT: 3005
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-cloudshop}
+      DB_USER: ${POSTGRES_USER:-cloudshop}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-cloudshop}
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC_ORDER_CREATED: ${KAFKA_TOPIC_ORDER_CREATED:-order_created}
+      KAFKA_TOPIC_PAYMENT_COMPLETED: ${KAFKA_TOPIC_PAYMENT_COMPLETED:-payment_completed}
+      KAFKA_TOPIC_PRODUCT_VIEWED: ${KAFKA_TOPIC_PRODUCT_VIEWED:-product_viewed}
+      KAFKA_TOPIC_CUSTOMER_REGISTERED: ${KAFKA_TOPIC_CUSTOMER_REGISTERED:-customer_registered}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-3005}:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3005/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 60s
       retries: 3
     networks:
       - cloudshop

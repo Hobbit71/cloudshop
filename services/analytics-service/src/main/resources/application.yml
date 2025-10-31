@@ -1,0 +1,100 @@
+spring:
+  application:
+    name: analytics-service
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:cloudshop}
+    username: ${DB_USER:cloudshop}
+    password: ${DB_PASSWORD:cloudshop}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  elasticsearch:
+    uris: http://${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:9200}
+    connection-timeout: 5s
+    socket-timeout: 60s
+  
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: analytics-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: ${PORT:3005}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    root: INFO
+    com.cloudshop.analyticsservice: ${LOG_LEVEL:DEBUG}
+    org.springframework.web: INFO
+    org.springframework.kafka: ${KAFKA_LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${SQL_PARAM_LOG_LEVEL:WARN}
+
+app:
+  kafka:
+    topics:
+      order-created: ${KAFKA_TOPIC_ORDER_CREATED:order_created}
+      payment-completed: ${KAFKA_TOPIC_PAYMENT_COMPLETED:payment_completed}
+      product-viewed: ${KAFKA_TOPIC_PRODUCT_VIEWED:product_viewed}
+      customer-registered: ${KAFKA_TOPIC_CUSTOMER_REGISTERED:customer_registered}
+    consumer:
+      concurrency: ${KAFKA_CONSUMER_CONCURRENCY:3}
+      max-poll-records: ${KAFKA_MAX_POLL_RECORDS:500}
+  
+  elasticsearch:
+    index:
+      events: analytics-events
+  
+  cors:
+    allowed-origins: ${CORS_ORIGIN:http://localhost:5173,http://localhost:3000}
+  
+  analytics:
+    retention:
+      days: ${ANALYTICS_RETENTION_DAYS:365}
+    aggregation:
+      batch-size: ${AGGREGATION_BATCH_SIZE:1000}
+
