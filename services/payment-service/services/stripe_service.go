@@ -2,10 +2,13 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/paymentintent"
+	"github.com/stripe/stripe-go/v76/refund"
+	"github.com/stripe/stripe-go/v76/webhook"
 	"go.uber.org/zap"
 
 	"github.com/cloudshop/payment-service/config"
@@ -56,9 +59,9 @@ func (s *StripeService) ProcessPayment(ctx context.Context, payment *models.Paym
 
 	// Add payment method if available in metadata
 	if paymentMethodID, ok := payment.Metadata["payment_method_id"].(string); ok {
-		params.SetPaymentMethod(paymentMethodID)
-		params.SetConfirmationMethod(stripe.String(string(stripe.PaymentIntentConfirmationMethodAutomatic)))
-		params.SetConfirm(stripe.Bool(true))
+		params.PaymentMethod = stripe.String(paymentMethodID)
+		params.ConfirmationMethod = stripe.String(string(stripe.PaymentIntentConfirmationMethodAutomatic))
+		params.Confirm = stripe.Bool(true)
 	}
 
 	intent, err := paymentintent.New(params)
@@ -92,7 +95,7 @@ func (s *StripeService) VerifyWebhookSignature(payload []byte, signature string)
 		return true, nil // In development, allow without verification
 	}
 
-	event, err := stripe.ConstructEvent(payload, signature, s.config.StripeWebhookSecret)
+	event, err := webhook.ConstructEvent(payload, signature, s.config.StripeWebhookSecret)
 	if err != nil {
 		s.logger.Error("Stripe webhook signature verification failed", zap.Error(err))
 		return false, nil
@@ -105,17 +108,30 @@ func (s *StripeService) VerifyWebhookSignature(payload []byte, signature string)
 func (s *StripeService) ProcessWebhookEvent(event *stripe.Event) (string, *models.PaymentStatus, error) {
 	switch event.Type {
 	case "payment_intent.succeeded":
-		if paymentIntent, ok := event.Data.Object.(*stripe.PaymentIntent); ok {
+		var paymentIntent stripe.PaymentIntent
+		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err == nil {
 			status := models.PaymentStatusSucceeded
 			return paymentIntent.ID, &status, nil
 		}
-	case "payment_intent.payment_failed":
-		if paymentIntent, ok := event.Data.Object.(*stripe.PaymentIntent); ok {
+		case "payment_intent.payment_failed":
+		var paymentIntent stripe.PaymentIntent
+		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err == nil {
 			status := models.PaymentStatusFailed
-			return paymentIntent.ID, &status, fmt.Errorf("payment failed: %s", paymentIntent.LastPaymentError.Message)
+			errMsg := "Payment failed"
+			if paymentIntent.LastPaymentError != nil {
+				// Stripe Error type doesn't have a direct Message field
+				// Use the error string representation or check specific fields
+				if paymentIntent.LastPaymentError.DeclineCode != "" {
+					errMsg = fmt.Sprintf("Payment declined: %s", paymentIntent.LastPaymentError.DeclineCode)
+				} else if paymentIntent.LastPaymentError.Code != "" {
+					errMsg = fmt.Sprintf("Payment error: %s", paymentIntent.LastPaymentError.Code)
+				}
+			}
+			return paymentIntent.ID, &status, fmt.Errorf(errMsg)
 		}
 	case "charge.refunded":
-		if charge, ok := event.Data.Object.(*stripe.Charge); ok {
+		var charge stripe.Charge
+		if err := json.Unmarshal(event.Data.Raw, &charge); err == nil {
 			if charge.PaymentIntent != nil {
 				status := models.PaymentStatusRefunded
 				return charge.PaymentIntent.ID, &status, nil
@@ -138,11 +154,13 @@ func (s *StripeService) RefundPayment(ctx context.Context, payment *models.Payme
 		return "", fmt.Errorf("failed to get payment intent: %w", err)
 	}
 
-	if intent.Charges == nil || len(intent.Charges.Data) == 0 {
+	// Get the latest charge from the payment intent
+	chargeID := ""
+	if intent.LatestCharge != nil {
+		chargeID = intent.LatestCharge.ID
+	} else {
 		return "", fmt.Errorf("payment intent has no charges")
 	}
-
-	chargeID := intent.Charges.Data[0].ID
 
 	// Create refund params
 	refundParams := &stripe.RefundParams{
@@ -159,7 +177,7 @@ func (s *StripeService) RefundPayment(ctx context.Context, payment *models.Payme
 	}
 
 	// Create refund
-	refund, err := stripe.RefundNew(refundParams)
+	refundResult, err := refund.New(refundParams)
 	if err != nil {
 		s.logger.Error("Stripe refund failed",
 			zap.Error(err),
@@ -168,7 +186,7 @@ func (s *StripeService) RefundPayment(ctx context.Context, payment *models.Payme
 		return "", fmt.Errorf("stripe refund failed: %w", err)
 	}
 
-	return refund.ID, nil
+	return refundResult.ID, nil
 }
 
 

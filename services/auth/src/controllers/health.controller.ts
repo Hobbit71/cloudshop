@@ -6,7 +6,7 @@ import { HealthCheckResponse } from '../types';
 const startTime = Date.now();
 
 export class HealthController {
-  async check(req: Request, res: Response): Promise<void> {
+  async check(_req: Request, res: Response): Promise<void> {
     const dbStatus = await testDbConnection();
     const redisStatus = await testRedisConnection();
 

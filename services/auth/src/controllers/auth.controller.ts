@@ -1,8 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types';
 import { authService } from '../services/auth.service';
-import { mfaService } from '../services/mfa.service';
-import { userService } from '../services/user.service';
 import { AuthenticationError } from '../utils/errors';
 
 export class AuthController {

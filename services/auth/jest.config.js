@@ -12,7 +12,11 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        types: ['jest', 'node'],
+      },
+    }],
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
 };

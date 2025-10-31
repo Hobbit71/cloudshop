@@ -1,5 +1,6 @@
 """Order notification service."""
 import logging
+from decimal import Decimal
 from uuid import UUID
 from app.config import settings
 from app.models.order import Order

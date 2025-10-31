@@ -55,7 +55,10 @@ const startServer = async (): Promise<void> => {
   try {
     // Initialize database
     logger.info('Initializing database connection...');
-    createPool(config.database);
+    createPool({
+      ...config.database,
+      database: config.database.name,
+    });
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for connection
 
     // Initialize Redis

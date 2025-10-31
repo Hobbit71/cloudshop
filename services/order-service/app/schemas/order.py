@@ -12,7 +12,7 @@ from app.schemas.address import AddressSchema
 class OrderCreate(BaseModel):
     """Order creation schema."""
     merchant_id: UUID
-    items: list[OrderItemCreate] = Field(..., min_items=1)
+    items: list[OrderItemCreate]
     shipping_address: AddressSchema
     notes: Optional[str] = Field(None, max_length=1000)
     

@@ -5,6 +5,8 @@ import { useAuthStore } from '@store/authStore'
 
 vi.mock('@store/authStore', () => ({
   useAuthStore: vi.fn(),
+  selectIsLoggedIn: vi.fn((s: any) => s.isAuthenticated),
+  selectUserEmail: vi.fn((s: any) => s.user?.email),
 }))
 
 describe('useAuth', () => {
