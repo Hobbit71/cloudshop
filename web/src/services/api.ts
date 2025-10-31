@@ -1,18 +1,11 @@
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
-export const api = axios.create({
-  baseURL: API_URL,
-  timeout: 10_000
-})
-
-api.interceptors.response.use(
-  (res) => res,
-  (error) => {
-    // Centralized error handling hook
-    return Promise.reject(error)
-  }
-)
+export { api } from './api/client'
+export * as AuthService from './api/auth'
+export * as ProductService from './api/products'
+export * as OrderService from './api/orders'
+export * as CartService from './api/cart'
+export * as PaymentService from './api/payments'
+export * as CustomerService from './api/customers'
+export * as AnalyticsService from './api/analytics'
+export * from './api/utils'
 
 
