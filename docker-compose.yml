@@ -148,6 +148,43 @@ services:
     networks:
       - cloudshop
 
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: cloudshop-order-service
+    restart: unless-stopped
+    environment:
+      DEBUG: ${DEBUG:-false}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cloudshop}:${POSTGRES_PASSWORD:-cloudshop}@postgres:5432/${POSTGRES_DB:-cloudshop}_orders
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-10}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-20}
+      API_PREFIX: /api/v1
+      CORS_ORIGINS: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:3000}
+      AUTH_SERVICE_URL: http://auth:3001
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      PRODUCT_SERVICE_URL: http://product-service:3002
+      PAYMENT_SERVICE_URL: http://payment-mock:8080
+      SHIPPING_BASE_RATE: ${SHIPPING_BASE_RATE:-5.99}
+      SHIPPING_FREE_THRESHOLD: ${SHIPPING_FREE_THRESHOLD:-50.00}
+      TAX_RATE: ${TAX_RATE:-0.08}
+      ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-true}
+      ENABLE_SHIPPING_CALCULATION: ${ENABLE_SHIPPING_CALCULATION:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${ORDER_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - cloudshop
+
 networks:
   cloudshop:
     name: cloudshop
