@@ -185,6 +185,39 @@ services:
     networks:
       - cloudshop
 
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: cloudshop-payment-service
+    restart: unless-stopped
+    environment:
+      ENV: ${ENV:-development}
+      PORT: 8081
+      DATABASE_URL: postgres://${POSTGRES_USER:-cloudshop}:${POSTGRES_PASSWORD:-cloudshop}@postgres:5432/${POSTGRES_DB:-cloudshop}_payments?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      AUTH_SERVICE_URL: http://auth:3001
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      CORS_ORIGINS: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${PAYMENT_SERVICE_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
+    networks:
+      - cloudshop
+
 networks:
   cloudshop:
     name: cloudshop
