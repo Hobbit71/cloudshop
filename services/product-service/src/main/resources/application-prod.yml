@@ -1,0 +1,16 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    root: INFO
+    com.cloudshop.productservice: INFO
+    org.springframework.web: WARN
+
+app:
+  elasticsearch:
+    enabled: true
+
