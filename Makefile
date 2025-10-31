@@ -1,44 +1,41 @@
-# CloudShop Makefile
+# CloudShop root Makefile
+# Targets provide a consistent developer experience across polyglot services.
 
-.PHONY: help setup dev test build deploy-local clean
+.PHONY: setup dev test build deploy-local clean help
 
 SHELL := /bin/bash
-DOCKER_COMPOSE := docker compose
-ENV_FILE := .env
+PROJECT_NAME := cloudshop
 
 help:
-	@echo "CloudShop Makefile targets:"
-	@echo "  setup         Install tooling, prepare local environment"
-	@echo "  dev           Start local infra (Postgres, Redis, Elasticsearch, Mock Payment)"
-	@echo "  test          Run repository tests (placeholder until services are added)"
-	@echo "  build         Build all containers"
-	@echo "  deploy-local  Bring up infra and (future) microservices"
-	@echo "  clean         Stop and remove containers, networks, volumes"
+	@echo "Common targets:"
+	@echo "  setup         One-time setup (env file, preflight checks)"
+	@echo "  dev           Start local infra (docker compose up -d)"
+	@echo "  test          Run monorepo tests (placeholder; customize per service)"
+	@echo "  build         Build all images (docker compose build)"
+	@echo "  deploy-local  Alias for dev; customize for k8s later"
+	@echo "  clean         Stop and remove local infra (down -v)"
 
 setup:
-	@echo "[setup] Preparing local environment..."
-	@if [ ! -f $(ENV_FILE) ]; then cp .env.example $(ENV_FILE); echo "Created $(ENV_FILE) from .env.example"; fi
-	@echo "[setup] Done. You can now run 'make dev'"
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Created .env from .env.example"; else echo ".env already exists"; fi
+	@command -v docker >/dev/null 2>&1 || { echo "Docker is required"; exit 1; }
+	@command -v docker compose >/dev/null 2>&1 || command -v docker-compose >/dev/null 2>&1 || { echo "Docker Compose is required"; exit 1; }
 
 dev:
-	@echo "[dev] Starting local dependencies via docker-compose..."
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) up -d
-	@echo "[dev] Services starting. Use 'docker compose ps' to view status."
+	@echo "Starting local infra..."
+	@docker compose up -d
+	@echo "Infra started. Check health: postgres:5432, redis:6379, elastic:9200, wiremock:8080"
 
 test:
-	@echo "[test] Running tests (placeholder). Add service-level tests as they are introduced."
-	@echo "[test] No tests defined yet."
+	@echo "Running monorepo tests (placeholder). Customize to iterate services."
+	@# Example: find services/* -maxdepth 1 -type d -exec make -C {} test \;
 
 build:
-	@echo "[build] Building containers..."
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) build --pull
+	@echo "Building docker images..."
+	@docker compose build --pull
 
 deploy-local: dev
-	@echo "[deploy-local] Infra is up. Add microservice compose profiles or k8s manifests later."
 
 clean:
-	@echo "[clean] Stopping and removing containers, networks, and volumes..."
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) down -v --remove-orphans
-	@echo "[clean] Done."
-
+	@echo "Stopping and removing local infra..."
+	@docker compose down -v --remove-orphans
 

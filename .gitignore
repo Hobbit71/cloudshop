@@ -1,151 +1,224 @@
 # CloudShop Monorepo .gitignore
-# Combines common ignores for Node.js, Python, Java, and Go projects
-# Also includes OS and editor files. Adjust as needed per service.
+# Covers Node.js, Python, Java, Go, plus common tooling, OS and editors
 
-##########################
-# OS & Editor
-##########################
+##############################
+# General / OS / Editors
+##############################
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*.bak
+*.orig
+*.rej
+*.pid
+*.seed
+*.out
+*.trace
+*.patch
 .idea/
 .vscode/
-.history/
 .fleet/
-.cache/
-.Trash-*/
+.history/
+.vs/
+.project
+.classpath
+.settings/
+.metadata/
+*.iml
 
-##########################
-# Environment & Secrets
-##########################
+# Env and secrets
 .env
-.env.*
-!.env.example
+.env.*.local
 .env.local
 .envrc
-.direnv/
+.secrets/
+secrets.*.json
+secret.*
 
-##########################
-# Logs & Reports
-##########################
-logs/
-*.log
-*.log.*
-*.out
-*.err
+# Build / cache / coverage
+dist/
+build/
+out/
 coverage/
-coverage-final.json
-coverage.xml
 reports/
 .nyc_output/
+.coverage
+.coverage.*
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.hypothesis/
-
-##########################
-# Docker & Build Artifacts
-##########################
-.docker/
-docker-data/
-**/dist/
-**/build/
-**/out/
-tmp/
-temp/
-.temp/
-
-##########################
-# Node.js
-##########################
+.tox/
+.nox/
+.cache/
+.gradle/
+target/
+bin/
+obj/
+classes/
+generated/
+site/
+docs/_build/
 node_modules/
-**/node_modules/
+jspm_packages/
+bower_components/
+
+# Docker / Devcontainers
+.devcontainer/local/
+.docker/
+docker/**/data/
+docker/**/tmp/
+.compose/**/data/
+.compose/**/tmp/
+
+# Logs
+logs/
+*.log*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.npm/
-.pnpm-store/
-.yarn/
-.yarn/cache/
-.yarn/unplugged/
-.yarn/build-state.yml
-.yarn/install-state.gz
+lerna-debug.log*
+
+##############################
+# Node.js
+##############################
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnp.cjs
+.pnp.loader.mjs
+.pnp.js
+.tsbuildinfo
 .eslintcache
 .stylelintcache
 .parcel-cache/
+.next/
+.nuxt/
+.docusaurus/
+.svelte-kit/
 .turbo/
+.vite/
+.vercel/
+.firebase/
+.serverless/
+.wrangler/
+.yalc/
+.yalc/**
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.npm/
+.node_repl_history
+.env.development.local
+.env.test.local
+.env.production.local
 
-##########################
+##############################
 # Python
-##########################
+##############################
 __pycache__/
 *.py[cod]
 *$py.class
 .python-version
 .venv/
 venv/
+ENV/
+env/
 pip-wheel-metadata/
 pip-log.txt
 pip-delete-this-directory.txt
-.coverage
-.coverage.*
-.tox/
-.pytest_cache/
+*.manifest
+*.spec
+*.egg-info/
+.eggs/
+eggs/
+*.egg
+wheelhouse/
+site-packages/
+htmlcov/
 .ipynb_checkpoints/
+.jupyter/
+db.sqlite3
 
-##########################
+##############################
 # Java
-##########################
-target/
-**/target/
-*.class
-.gradle/
-**/.gradle/
-build/
-**/build/
-.project
+##############################
 .classpath
+.project
 .settings/
 .factorypath
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+hs_err_pid*
+replay_pid*
+*.java-version
+
+##############################
+# Gradle
+##############################
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+##############################
+# Maven
+##############################
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
-##########################
+##############################
 # Go
-##########################
+##############################
 bin/
 pkg/
+vendor/
+go.work.sum
 *.test
-**/vendor/
 
-##########################
-# Terraform (if used)
-##########################
-.terraform/
-**/.terraform/*
-terraform.tfstate
-terraform.tfstate.*
-crash.log
-override.tf
-override.tf.json
-*.tfvars
-*.tfvars.json
+##############################
+# IDE specifics
+##############################
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
-##########################
+##############################
 # Misc
-##########################
-.DS_Store*
-*.swp
-*.swo
-*.iml
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/dictionaries
-.idea/**/shelf
-.idea/**/libraries
-.idea/**/httpRequests
-.jekyll-cache/
-node_modules*/
-
+##############################
+terraform.tfstate*
+.terraform/
+*.tfvars
+*.tfstate
+.envrc
+*.pem
+*.key
+*.crt
+*.p12
+*.keystore
+*.jks
 # Logs
 logs
 *.log
