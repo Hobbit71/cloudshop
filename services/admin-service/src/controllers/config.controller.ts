@@ -75,6 +75,7 @@ export class ConfigController {
       user_id: user?.id,
       action: 'update',
       resource_type: 'system_config',
+      resource_id: updatedConfig.id,
       details: { key, updates },
       ip_address: req.ip,
       user_agent: req.get('user-agent'),
