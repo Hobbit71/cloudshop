@@ -12,6 +12,7 @@ CloudShop is a microservices-based application consisting of:
 - **Product Service** (Spring Boot/Java) - Product management with Elasticsearch search and Redis caching
 - **Order Service** (FastAPI/Python) - Order processing with validation, shipping, and refunds
 - **Payment Service** (Go/Gin) - Multi-gateway payment processing with Stripe and PayPal integration
+- **Inventory Service** (Express.js/TypeScript) - Real-time inventory tracking with stock reservations, multi-warehouse support, and forecasting
 - **Web Frontend** (React/TypeScript) - Modern SPA built with Vite, Tailwind CSS, and React Query
 
 All services communicate via REST APIs and are containerized with Docker.
@@ -63,6 +64,7 @@ AUTH_PORT=3001
 PRODUCT_SERVICE_PORT=3002
 ORDER_SERVICE_PORT=8000
 PAYMENT_SERVICE_PORT=8081
+INVENTORY_SERVICE_PORT=3003
 PAYMENT_MOCK_PORT=8080
 
 # JWT Secret (change in production!)
@@ -99,6 +101,7 @@ This will build Docker images for:
 - Product Service
 - Order Service
 - Payment Service
+- Inventory Service
 - Infrastructure services (PostgreSQL, Redis, Elasticsearch, Payment Mock)
 
 ### Option 2: Build Services Individually
@@ -165,12 +168,14 @@ This is the easiest way to run the entire platform:
    - `cloudshop-product-service` (Product Service on port 3002)
    - `cloudshop-order-service` (Order Service on port 8000)
    - `cloudshop-payment-service` (Payment Service on port 8081)
+   - `cloudshop-inventory-service` (Inventory Service on port 3003)
 
 5. **Check service health:**
    - Auth Service: http://localhost:3001/health
    - Product Service: http://localhost:3002/health
    - Order Service: http://localhost:8000/health
    - Payment Service: http://localhost:8081/health
+   - Inventory Service: http://localhost:3003/health
 
 6. **Stop all services:**
    ```bash
@@ -323,6 +328,18 @@ Key environment variables (see `services/payment-service/env.example`):
 - `CORS_ORIGINS` - Allowed CORS origins
 - `LOG_LEVEL` - Logging level (default: info)
 
+### Inventory Service
+
+Key environment variables (see `services/inventory-service/env.example`):
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - PostgreSQL configuration
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` - Redis configuration
+- `SOCKET_IO_CORS_ORIGIN` - Socket.io CORS origins
+- `RESERVATION_TTL` - Reservation expiration time in seconds (default: 1800)
+- `LOW_STOCK_THRESHOLD` - Default low stock threshold (default: 10)
+- `FORECASTING_LOOKBACK_DAYS` - Days of history for forecasting (default: 90)
+- `CORS_ORIGIN` - Allowed CORS origins
+- `PORT` - Service port (default: 3003)
+
 ## Testing
 
 ### Run All Tests (Docker)
@@ -339,6 +356,9 @@ docker compose exec order-service pytest
 
 # Payment Service tests
 docker compose exec payment-service go test ./...
+
+# Inventory Service tests
+docker compose exec inventory-service npm test
 
 # Web Frontend tests
 cd web && npm test
@@ -370,6 +390,12 @@ cd services/payment-service
 go test ./...
 ```
 
+**Inventory Service:**
+```bash
+cd services/inventory-service
+npm test
+```
+
 **Web Frontend:**
 ```bash
 cd web
@@ -386,6 +412,7 @@ Once services are running:
 - **Product Service**: Check `services/product-service/README.md` for endpoint details
 - **Auth Service**: Check `services/auth/README.md` for endpoint details
 - **Payment Service**: Check `services/payment-service/README.md` for endpoint details
+- **Inventory Service**: Check `services/inventory-service/README.md` for endpoint details
 
 ## Troubleshooting
 
@@ -397,7 +424,7 @@ Once services are running:
    ```
 
 2. **Check for port conflicts:**
-   Ensure ports 3001, 3002, 8000, 8081, 5432, 6379, 9200, 8080 are not in use.
+   Ensure ports 3001, 3002, 3003, 8000, 8081, 5432, 6379, 9200, 8080 are not in use.
 
 3. **Check service logs:**
    ```bash
@@ -440,6 +467,11 @@ docker compose exec auth npm run migrate
 docker compose exec order-service alembic upgrade head
 ```
 
+**Inventory Service:**
+```bash
+docker compose exec inventory-service npm run migrate
+```
+
 ## Development Workflow
 
 1. Make code changes in the respective service directory
@@ -461,3 +493,4 @@ docker compose exec order-service alembic upgrade head
   - `services/product-service/README.md`
   - `services/order-service/README.md`
   - `services/payment-service/README.md`
+  - `services/inventory-service/README.md`

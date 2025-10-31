@@ -98,13 +98,44 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
   - PostgreSQL database with pgx driver
   - Structured logging with Zap
   - Docker support and configuration
+- **Inventory Service** (Express.js/TypeScript)
+  - Real-time inventory tracking with Socket.io
+  - Stock reservations during checkout with automatic expiration
+  - Multi-warehouse inventory synchronization
+  - Low stock alerts with automatic monitoring
+  - Inventory forecasting based on historical sales data
+  - Barcode scanning support for inventory lookup
+  - Redis caching for improved performance
+  - PostgreSQL database with comprehensive schema
+  - Database migrations for warehouses, inventory, reservations, transfers, alerts, and history tables
+  - Health check endpoint: `/health`
+  - RESTful API endpoints:
+    - `GET /api/v1/inventory/{product_id}` - Get inventory for a product
+    - `GET /api/v1/inventory/barcode/{barcode}` - Get inventory by barcode
+    - `PUT /api/v1/inventory/{product_id}` - Update inventory
+    - `GET /api/v1/inventory/low-stock` - Get low stock items
+    - `POST /api/v1/inventory/reserve` - Reserve stock for checkout
+    - `POST /api/v1/inventory/reserve/{id}/confirm` - Confirm reservation
+    - `POST /api/v1/inventory/reserve/{id}/release` - Release reservation
+    - `POST /api/v1/inventory/transfer` - Create inventory transfer
+    - `POST /api/v1/inventory/transfer/{id}/start` - Start transfer
+    - `POST /api/v1/inventory/transfer/{id}/complete` - Complete transfer
+    - `POST /api/v1/inventory/transfer/{id}/cancel` - Cancel transfer
+  - Socket.io real-time updates for inventory changes and low stock alerts
+  - Automatic cleanup of expired reservations (runs every 5 minutes)
+  - Comprehensive error handling with structured API errors
+  - Request validation with express-validator
+  - Structured logging with Winston
+  - Docker support and configuration
 
 ### Changed
-- Updated `docker-compose.yml` to include product-service, order-service, and payment-service configurations
+- Updated `docker-compose.yml` to include product-service, order-service, payment-service, and inventory-service configurations
   - Added product-service with dependencies on PostgreSQL, Redis, and Elasticsearch
   - Added order-service with dependency on PostgreSQL
   - Added payment-service with dependency on PostgreSQL
+  - Added inventory-service with dependencies on PostgreSQL and Redis
   - All services include health checks and proper network configuration
+- Updated main README to document Inventory Service architecture, configuration, and API endpoints
 
 ### Deprecated
 
