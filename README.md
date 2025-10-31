@@ -11,6 +11,7 @@ CloudShop is a microservices-based application consisting of:
 - **Auth Service** (Express.js/TypeScript) - Authentication and authorization with JWT, MFA, and RBAC
 - **Product Service** (Spring Boot/Java) - Product management with Elasticsearch search and Redis caching
 - **Order Service** (FastAPI/Python) - Order processing with validation, shipping, and refunds
+- **Payment Service** (Go/Gin) - Multi-gateway payment processing with Stripe and PayPal integration
 - **Web Frontend** (React/TypeScript) - Modern SPA built with Vite, Tailwind CSS, and React Query
 
 All services communicate via REST APIs and are containerized with Docker.
@@ -61,6 +62,8 @@ ELASTIC_PORT=9200
 AUTH_PORT=3001
 PRODUCT_SERVICE_PORT=3002
 ORDER_SERVICE_PORT=8000
+PAYMENT_SERVICE_PORT=8081
+PAYMENT_MOCK_PORT=8080
 
 # JWT Secret (change in production!)
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
@@ -95,6 +98,7 @@ This will build Docker images for:
 - Auth Service
 - Product Service
 - Order Service
+- Payment Service
 - Infrastructure services (PostgreSQL, Redis, Elasticsearch, Payment Mock)
 
 ### Option 2: Build Services Individually
@@ -160,11 +164,13 @@ This is the easiest way to run the entire platform:
    - `cloudshop-auth` (Auth Service on port 3001)
    - `cloudshop-product-service` (Product Service on port 3002)
    - `cloudshop-order-service` (Order Service on port 8000)
+   - `cloudshop-payment-service` (Payment Service on port 8081)
 
 5. **Check service health:**
    - Auth Service: http://localhost:3001/health
    - Product Service: http://localhost:3002/health
    - Order Service: http://localhost:8000/health
+   - Payment Service: http://localhost:8081/health
 
 6. **Stop all services:**
    ```bash
@@ -306,6 +312,17 @@ Key environment variables (see `services/order-service/env.example`):
 - `SHIPPING_BASE_RATE`, `SHIPPING_FREE_THRESHOLD` - Shipping configuration
 - `TAX_RATE` - Tax rate (default: 0.08)
 
+### Payment Service
+
+Key environment variables (see `services/payment-service/env.example`):
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - JWT signing secret for authentication
+- `AUTH_SERVICE_URL` - Auth service endpoint for token validation
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` - Stripe integration (optional)
+- `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE` - PayPal integration (optional)
+- `CORS_ORIGINS` - Allowed CORS origins
+- `LOG_LEVEL` - Logging level (default: info)
+
 ## Testing
 
 ### Run All Tests (Docker)
@@ -319,6 +336,9 @@ docker compose exec product-service mvn test
 
 # Order Service tests
 docker compose exec order-service pytest
+
+# Payment Service tests
+docker compose exec payment-service go test ./...
 
 # Web Frontend tests
 cd web && npm test
@@ -344,6 +364,12 @@ cd services/order-service
 pytest
 ```
 
+**Payment Service:**
+```bash
+cd services/payment-service
+go test ./...
+```
+
 **Web Frontend:**
 ```bash
 cd web
@@ -359,6 +385,7 @@ Once services are running:
 - **Order Service ReDoc**: http://localhost:8000/redoc
 - **Product Service**: Check `services/product-service/README.md` for endpoint details
 - **Auth Service**: Check `services/auth/README.md` for endpoint details
+- **Payment Service**: Check `services/payment-service/README.md` for endpoint details
 
 ## Troubleshooting
 
@@ -370,7 +397,7 @@ Once services are running:
    ```
 
 2. **Check for port conflicts:**
-   Ensure ports 3001, 3002, 8000, 5432, 6379, 9200, 8080 are not in use.
+   Ensure ports 3001, 3002, 8000, 8081, 5432, 6379, 9200, 8080 are not in use.
 
 3. **Check service logs:**
    ```bash
@@ -433,3 +460,4 @@ docker compose exec order-service alembic upgrade head
   - `services/auth/README.md`
   - `services/product-service/README.md`
   - `services/order-service/README.md`
+  - `services/payment-service/README.md`
