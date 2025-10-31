@@ -9,10 +9,43 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
 )
+from sqlalchemy import String
+from sqlalchemy.types import TypeDecorator, CHAR
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from app.database import Base, get_db
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem
 from app.main import app
+
+
+# Custom UUID type that works with both PostgreSQL and SQLite
+class GUID(TypeDecorator):
+    """Platform-independent GUID type."""
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(PGUUID())
+        else:
+            return dialect.type_descriptor(CHAR(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, str):
+                return str(value)
+            return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            from uuid import UUID
+            return UUID(value)
 
 
 # Use in-memory SQLite for testing
@@ -30,6 +63,18 @@ def event_loop():
 @pytest.fixture(scope="function")
 async def test_db() -> AsyncGenerator[AsyncSession, None]:
     """Create test database session."""
+    # Patch UUID and JSONB columns for SQLite compatibility
+    from sqlalchemy import String, JSON
+    from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
+    
+    # Replace PGUUID with String and JSONB with JSON in all tables for SQLite compatibility
+    for table in Base.metadata.tables.values():
+        for column in table.columns:
+            if isinstance(column.type, PGUUID):
+                column.type = String(36)
+            elif isinstance(column.type, JSONB):
+                column.type = JSON()
+    
     engine = create_async_engine(
         TEST_DATABASE_URL,
         echo=False,
@@ -54,6 +99,13 @@ async def test_db() -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.drop_all)
     
     await engine.dispose()
+    
+    # Restore original UUID types
+    for table in Base.metadata.tables.values():
+        for column in table.columns:
+            if isinstance(column.type, String) and column.type.length == 36:
+                # Note: We can't easily restore the original type, but this is fine for tests
+                pass
 
 
 @pytest.fixture

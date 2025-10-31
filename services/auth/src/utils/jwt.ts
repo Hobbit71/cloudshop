@@ -13,7 +13,7 @@ export const generateAccessToken = (user: User): string => {
 
   return jwt.sign(payload, config.jwt.secret, {
     expiresIn: config.jwt.accessTokenExpiry,
-  });
+  } as jwt.SignOptions);
 };
 
 export const generateRefreshToken = (user: User): string => {
@@ -27,7 +27,7 @@ export const generateRefreshToken = (user: User): string => {
 
   return jwt.sign(payload, config.jwt.secret, {
     expiresIn: config.jwt.refreshTokenExpiry,
-  });
+  } as jwt.SignOptions);
 };
 
 export const verifyToken = (token: string): JWTPayload => {

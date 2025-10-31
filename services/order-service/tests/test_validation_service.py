@@ -34,7 +34,9 @@ async def test_validate_order_create_success():
 @pytest.mark.asyncio
 async def test_validate_order_create_empty_items():
     """Test validation with empty items."""
-    order_data = OrderCreate(
+    # Use model_construct to bypass schema validation and test service-level validation
+    # This simulates the scenario where schema validation might be bypassed or data comes from another source
+    order_data = OrderCreate.model_construct(
         merchant_id=uuid4(),
         items=[],
         shipping_address=AddressSchema(

@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap/zaptest"

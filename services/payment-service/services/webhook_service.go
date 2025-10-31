@@ -80,11 +80,17 @@ func (s *WebhookService) processStripeWebhook(ctx context.Context, req *models.W
 
 	valid, event := s.stripeService.VerifyWebhookSignature(payloadBytes, req.Signature)
 	if !valid {
-		s.logAudit(ctx, req.ID, models.AuditActionWebhookFailed, "", "", "Webhook signature verification failed", nil, nil)
+		// For webhook-level audit logs (before payment ID is known), use uuid.Nil
+		// and include the webhook ID in the details for traceability
+		details := fmt.Sprintf("Webhook signature verification failed (webhook_id: %s)", req.ID)
+		s.logAudit(ctx, uuid.Nil, models.AuditActionWebhookFailed, "", "", details, nil, nil)
 		return fmt.Errorf("webhook signature verification failed")
 	}
 
-	s.logAudit(ctx, req.ID, models.AuditActionWebhookVerified, "", "", "Webhook signature verified", nil, nil)
+	// For webhook-level audit logs (before payment ID is known), use uuid.Nil
+	// and include the webhook ID in the details for traceability
+	details := fmt.Sprintf("Webhook signature verified (webhook_id: %s)", req.ID)
+	s.logAudit(ctx, uuid.Nil, models.AuditActionWebhookVerified, "", "", details, nil, nil)
 
 	if event == nil {
 		// In development mode, try to process without full event object
@@ -112,7 +118,8 @@ func (s *WebhookService) processStripeWebhook(ctx context.Context, req *models.W
 		}
 
 		var failureReason *string
-		if status == &models.PaymentStatusFailed {
+		failedStatus := models.PaymentStatusFailed
+		if status != nil && *status == failedStatus {
 			reason := "Payment failed from webhook"
 			failureReason = &reason
 		}
@@ -188,7 +195,7 @@ func (s *WebhookService) processStripeWebhookData(ctx context.Context, req *mode
 // processPayPalWebhook processes a PayPal webhook
 func (s *WebhookService) processPayPalWebhook(ctx context.Context, req *models.WebhookRequest) error {
 	// Convert to JSON for signature verification
-	payload, err := json.Marshal(req.Data)
+	_, err := json.Marshal(req.Data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal webhook data: %w", err)
 	}
